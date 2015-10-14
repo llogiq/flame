@@ -39,5 +39,5 @@ fn wrong_name() {
 #[should_panic]
 fn cant_note() {
     flame::clear();
-    flame::note("hi");
+    flame::note("hi", None);
 }

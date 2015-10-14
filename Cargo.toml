@@ -1,9 +1,10 @@
 [package]
 name = "flame"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ty Overby <ty@pre-alpha.com>"]
 description = "a profiling / flamegraph library"
 license = "MIT"
+repository = "https://github.com/TyOverby/flame"
 
 [dependencies]
 clock_ticks = "*"
