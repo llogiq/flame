@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Ty Overby <ty@pre-alpha.com>"]
 description = "a profiling / flamegraph library"
 license = "MIT"
+
+[dependencies]
+clock_ticks = "*"
