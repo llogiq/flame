@@ -1,5 +1,4 @@
 #![allow(unused)]
-
 extern crate clock_ticks;
 
 use std::cell::{RefCell, Cell};
@@ -28,8 +27,8 @@ struct PrivateFrame {
 #[derive(Debug)]
 struct Event {
     name: StrCow,
-    start_ms: u64,
-    end_ms: Option<u64>,
+    start_ns: u64,
+    end_ns: Option<u64>,
     delta: Option<u64>,
     children: Vec<RcEvent>,
     notes: Vec<Note>,
@@ -65,10 +64,10 @@ pub struct Span {
     /// The name of the span
     pub name: StrCow,
     /// The timestamp of the start of the span
-    pub start_ms: u64,
+    pub start_ns: u64,
     /// The timestamp of the end of the span
-    pub end_ms: u64,
-    /// The time that ellapsed between start_ms and end_ms
+    pub end_ns: u64,
+    /// The time that ellapsed between start_ns and end_ns
     pub delta: u64,
     /// A list of spans that occurred inside this one
     pub children: Vec<Span>,
@@ -106,11 +105,11 @@ impl SpanGuard {
 
 impl Span {
     fn from_private(p: &Event, into: &mut Vec<Span>) {
-        if p.end_ms.is_some() && p.delta.is_some() {
+        if p.end_ns.is_some() && p.delta.is_some() {
             let mut public = Span {
                 name: p.name.clone(),
-                start_ms: p.start_ms,
-                end_ms: p.end_ms.unwrap(),
+                start_ns: p.start_ns,
+                end_ns: p.end_ns.unwrap(),
                 delta: p.delta.unwrap(),
                 children: Vec::new(),
                 notes: p.notes.clone(),
@@ -142,8 +141,8 @@ impl Event {
     fn root() -> RcEvent {
         Rc::new(RefCell::new(Event {
             name: "<root>".into(),
-            start_ms: clock_ticks::precise_time_ms(),
-            end_ms: None,
+            start_ns: clock_ticks::precise_time_ns(),
+            end_ns: None,
             delta: None,
             children: vec![],
             notes: vec![],
@@ -205,8 +204,8 @@ pub fn start<S: Into<StrCow>>(name: S) {
 
         collector.current = Some(Rc::new(RefCell::new(Event {
             name: name.into(),
-            start_ms: clock_ticks::precise_time_ms(),
-            end_ms: None,
+            start_ns: clock_ticks::precise_time_ns(),
+            end_ns: None,
             delta: None,
             children: vec![],
             notes: vec![]
@@ -238,9 +237,9 @@ pub fn end<S: Into<StrCow>>(name: S) {
         let mut current = current.borrow_mut();
 
         if current.name == name {
-            let end_ms = clock_ticks::precise_time_ms();
-            current.end_ms = Some(end_ms);
-            current.delta = Some(end_ms - current.start_ms);
+            let end_ns = clock_ticks::precise_time_ns();
+            current.end_ns = Some(end_ns);
+            current.delta = Some(end_ns - current.start_ns);
             collector.current = collector.stack.pop();
         } else {
             panic!("flame::event_end({}) tried to end the event {}", &name, &current.name);
@@ -271,7 +270,7 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
         let note = Note {
             name: name,
             description: description,
-            instant: clock_ticks::precise_time_ms(),
+            instant: clock_ticks::precise_time_ns(),
             _priv: ()
         };
 
