@@ -89,6 +89,21 @@ pub struct Note {
     _priv: (),
 }
 
+pub struct SpanGuard {
+    name: Option<StrCow>
+}
+
+impl Drop for SpanGuard {
+    fn drop(&mut self) {
+        let name = self.name.take().unwrap();
+        end(name);
+    }
+}
+
+impl SpanGuard {
+    fn end(self) { }
+}
+
 impl Span {
     fn from_private(p: &Event, into: &mut Vec<Span>) {
         if p.end_ms.is_some() && p.delta.is_some() {
@@ -144,6 +159,29 @@ impl Library {
             current: None
         }
     }
+}
+
+/// Starts a Span and also returns a SpanGuard.
+///
+/// When the SpanGuard is dropped (or the .end() is called on it),
+/// the span will automatically be ended.
+pub fn start_guard<S: Into<StrCow>>(name: S) -> SpanGuard {
+    let name = name.into();
+    start(name.clone());
+    SpanGuard { name: Some(name) }
+}
+
+/// Starts and ends a Span that lasts for the duration of the
+/// function `f`.
+pub fn span_of<S, F, R>(name: S, f: F) -> R where
+S: Into<StrCow>,
+F: FnOnce() -> R
+{
+    let name = name.into();
+    start(name.clone());
+    let r = f();
+    end(name);
+    r
 }
 
 /// Starts a new Span
