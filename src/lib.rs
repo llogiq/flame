@@ -99,7 +99,7 @@ impl Drop for SpanGuard {
 }
 
 impl SpanGuard {
-    fn end(self) { }
+    pub fn end(self) { }
 }
 
 fn convert_events_to_span<'a, I>(events: I) -> Vec<Span>

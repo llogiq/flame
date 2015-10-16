@@ -1,4 +1,32 @@
+
 extern crate flame;
+
+#[test]
+fn implicit_guarded_event() {
+    flame::clear();
+    flame::start_guard("foo");
+}
+
+#[test]
+fn named_guarded_event() {
+    flame::clear();
+    let _name = flame::start_guard("foo");
+}
+
+#[test]
+fn dropped_guarded_event() {
+    flame::clear();
+    let name = flame::start_guard("foo");
+    name.end();
+}
+
+#[test]
+#[allow(unreachable_code)]
+fn multiple_guard_early_return() {
+    flame::clear();
+    let _first = flame::start_guard("foo");
+    let _second = flame::start_guard("bar");
+}
 
 #[test]
 fn single_event() {
