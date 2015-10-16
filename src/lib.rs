@@ -2,12 +2,10 @@
 extern crate clock_ticks;
 
 use std::cell::{RefCell, Cell};
-use std::rc::Rc;
+use std::iter::Peekable;
 use std::borrow::Cow;
 
 pub type StrCow = Cow<'static, str>;
-
-type RcEvent = Rc<RefCell<Event>>;
 
 thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
@@ -19,18 +17,19 @@ struct Library {
 
 #[derive(Debug)]
 struct PrivateFrame {
-    root: RcEvent,
-    stack: Vec<RcEvent>,
-    current: Option<RcEvent>
+    next_id: u32,
+    all: Vec<Event>,
+    id_stack: Vec<u32>,
 }
 
 #[derive(Debug)]
 struct Event {
+    id: u32,
+    parent: Option<u32>,
     name: StrCow,
     start_ns: u64,
     end_ns: Option<u64>,
     delta: Option<u64>,
-    children: Vec<RcEvent>,
     notes: Vec<Note>,
 }
 
@@ -103,53 +102,58 @@ impl SpanGuard {
     fn end(self) { }
 }
 
-impl Span {
-    fn from_private(p: &Event, into: &mut Vec<Span>) {
-        if p.end_ns.is_some() && p.delta.is_some() {
-            let mut public = Span {
-                name: p.name.clone(),
-                start_ns: p.start_ns,
-                end_ns: p.end_ns.unwrap(),
-                delta: p.delta.unwrap(),
-                children: Vec::new(),
-                notes: p.notes.clone(),
-                _priv: (),
-            };
-
-            for child in p.children.iter() {
-                Span::from_private(&child.borrow(), &mut public.children);
-            }
-
-            into.push(public);
+fn convert_events_to_span<'a, I>(events: I) -> Vec<Span>
+where I: Iterator<Item = &'a Event> {
+    let mut iterator = events.peekable();
+    let mut v = vec![];
+    while let Some(event) = iterator.next() {
+        if let Some(span) = event_to_span(event, &mut iterator) {
+            v.push(span);
         }
     }
+    v
 }
+
+fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut Peekable<I>) -> Option<Span> {
+    if event.end_ns.is_some() && event.delta.is_some() {
+        let mut span = Span {
+            name: event.name.clone(),
+            start_ns: event.start_ns,
+            end_ns: event.end_ns.unwrap(),
+            delta: event.delta.unwrap(),
+            children: vec![],
+            notes: event.notes.clone(),
+            _priv: ()
+        };
+
+        loop {
+            {
+                match events.peek() {
+                    Some(next) if next.parent != Some(event.id) => break,
+                    None => break,
+                    _ => {}
+                }
+            }
+
+            let next = events.next().unwrap();
+            let child = event_to_span(next, events);
+            if let Some(child) = child {
+                span.children.push(child);
+            }
+        }
+        Some(span)
+    } else {
+        None
+    }
+}
+
 
 impl Frame {
     fn from_private(p: &PrivateFrame) -> Frame {
-        let root = p.root.borrow();
-        let mut v = Vec::with_capacity(root.children.len());
-        for child in root.children.iter() {
-            Span::from_private(&child.borrow(), &mut v);
-        }
+        let v = convert_events_to_span(p.all.iter());
         Frame { roots: v, _priv: () }
     }
 }
-
-
-impl Event {
-    fn root() -> RcEvent {
-        Rc::new(RefCell::new(Event {
-            name: "<root>".into(),
-            start_ns: clock_ticks::precise_time_ns(),
-            end_ns: None,
-            delta: None,
-            children: vec![],
-            notes: vec![],
-        }))
-    }
-}
-
 
 impl Library {
     fn new() -> Library {
@@ -188,33 +192,29 @@ pub fn start<S: Into<StrCow>>(name: S) {
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         if library.current.is_none() {
-            let root = Event::root();
             library.current = Some(PrivateFrame {
-                root: root.clone(),
-                stack: vec![],
-                current: Some(root)
+                next_id: 0,
+                all: vec![],
+                id_stack: vec![],
             });
         }
 
         let collector = library.current.as_mut().unwrap();
+        let id = collector.next_id;
+        collector.next_id += 1;
 
-        if let Some(mut prev) = collector.current.take() {
-            collector.stack.push(prev);
-        }
-
-        collector.current = Some(Rc::new(RefCell::new(Event {
+        let this = Event {
+            id: id,
+            parent: collector.id_stack.last().cloned(),
             name: name.into(),
             start_ns: clock_ticks::precise_time_ns(),
             end_ns: None,
             delta: None,
-            children: vec![],
             notes: vec![]
-        })));
+        };
 
-        if let Some(parent) = collector.stack.last_mut() {
-            let mut parent = parent.borrow_mut();
-            parent.children.push(collector.current.clone().unwrap())
-        }
+        collector.all.push(this);
+        collector.id_stack.push(id);
     });
 }
 
@@ -223,26 +223,24 @@ pub fn end<S: Into<StrCow>>(name: S) {
     let name = name.into();
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
-        if library.current.is_none() {
-            panic!("flame::event_end({}) called without a currently running span!", &name);
-        }
+        let collector = match library.current.as_mut() {
+            Some(x) => x,
+            None => panic!("flame::end({}) called without a currently running span!", &name)
+        };
 
-        let collector = library.current.as_mut().unwrap();
+        let current_id = match collector.id_stack.pop() {
+            Some(id) => id,
+            None => panic!("flame::end({:?}) called without a currently running span!",
+                          &name)
+        };
+        let event = &mut collector.all[current_id as usize];
 
-        if collector.current.is_none() {
-            panic!("flame::event_end({}) called without a currently running span!", &name);
-        }
-
-        let current = collector.current.take().unwrap();
-        let mut current = current.borrow_mut();
-
-        if current.name == name {
-            let end_ns = clock_ticks::precise_time_ns();
-            current.end_ns = Some(end_ns);
-            current.delta = Some(end_ns - current.start_ns);
-            collector.current = collector.stack.pop();
+        if event.name != name {
+            panic!("flame::end({}) attempted to end {}", &name, event.name);
         } else {
-            panic!("flame::event_end({}) tried to end the event {}", &name, &current.name);
+            let timestamp = clock_ticks::precise_time_ns();
+            event.end_ns = Some(timestamp);
+            event.delta = Some(timestamp - event.start_ns);
         }
     });
 }
@@ -260,21 +258,19 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
 
         let collector = library.current.as_mut().unwrap();
 
-        if collector.current.is_none() {
-            panic!("flame::note({:?}) called without a currently running span!", &name)
-        }
+        let current_id = match collector.id_stack.last() {
+            Some(id) => *id,
+            None => panic!("flame::note({}, {:?}) called without a currently running span!",
+                           &name, &description)
+        };
 
-        let current = collector.current.as_mut().unwrap();
-        let mut current = current.borrow_mut();
-
-        let note = Note {
+        let event = &mut collector.all[current_id as usize];
+        event.notes.push(Note {
             name: name,
             description: description,
             instant: clock_ticks::precise_time_ns(),
             _priv: ()
-        };
-
-        current.notes.push(note);
+        });
     });
 }
 
@@ -316,6 +312,6 @@ pub fn frames() -> Vec<Frame> {
 /// Prints all of the frames to stdout.
 pub fn debug() {
     LIBRARY.with(|library| {
-        println!("{:?}", frames());
+        println!("{:?}", library);
     });
 }

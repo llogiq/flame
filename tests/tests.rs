@@ -51,7 +51,6 @@ fn double_nested() {
     assert!(first.children.len() == 2);
     assert!(first.children[0].name == "event2");
     assert!(first.children[1].name == "event3");
-
 }
 
 #[test]
