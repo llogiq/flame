@@ -54,9 +54,11 @@ fn single_nested() {
     let frame = &frames[0];
     assert!(frame.roots.len() == 1);
     assert!(frame.roots[0].name == "event1");
+    assert!(frame.roots[0].depth == 0);
     let first = &frame.roots[0];
     assert!(first.children.len() == 1);
     assert!(first.children[0].name == "event2");
+    assert!(first.children[0].depth == 1);
 }
 
 #[test]
@@ -74,11 +76,14 @@ fn double_nested() {
     let frame = &frames[0];
     assert!(frame.roots.len() == 1);
     assert!(frame.roots[0].name == "event1");
+    assert!(frame.roots[0].depth == 0);
 
     let first = &frame.roots[0];
     assert!(first.children.len() == 2);
     assert!(first.children[0].name == "event2");
     assert!(first.children[1].name == "event3");
+    assert!(first.children[0].depth == 1);
+    assert!(first.children[1].depth == 1);
 }
 
 #[test]

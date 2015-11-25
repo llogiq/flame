@@ -1,6 +1,8 @@
 #![allow(unused)]
 extern crate clock_ticks;
 
+mod svg;
+
 use std::cell::{RefCell, Cell};
 use std::iter::Peekable;
 use std::borrow::Cow;
@@ -68,6 +70,8 @@ pub struct Span {
     pub end_ns: u64,
     /// The time that ellapsed between start_ns and end_ns
     pub delta: u64,
+    /// How deep this span is in the tree
+    pub depth: u16,
     /// A list of spans that occurred inside this one
     pub children: Vec<Span>,
     /// A list of notes that occurred inside this span
@@ -107,20 +111,21 @@ where I: Iterator<Item = &'a Event> {
     let mut iterator = events.peekable();
     let mut v = vec![];
     while let Some(event) = iterator.next() {
-        if let Some(span) = event_to_span(event, &mut iterator) {
+        if let Some(span) = event_to_span(event, &mut iterator, 0) {
             v.push(span);
         }
     }
     v
 }
 
-fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut Peekable<I>) -> Option<Span> {
+fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut Peekable<I>, depth: u16) -> Option<Span> {
     if event.end_ns.is_some() && event.delta.is_some() {
         let mut span = Span {
             name: event.name.clone(),
             start_ns: event.start_ns,
             end_ns: event.end_ns.unwrap(),
             delta: event.delta.unwrap(),
+            depth: depth,
             children: vec![],
             notes: event.notes.clone(),
             _priv: ()
@@ -136,7 +141,7 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
             }
 
             let next = events.next().unwrap();
-            let child = event_to_span(next, events);
+            let child = event_to_span(next, events, depth + 1);
             if let Some(child) = child {
                 span.children.push(child);
             }
@@ -218,8 +223,9 @@ pub fn start<S: Into<StrCow>>(name: S) {
     });
 }
 
-/// Ends the current Span
-pub fn end<S: Into<StrCow>>(name: S) {
+/// Ends the current Span and returns the number
+/// of nanoseconds that passed.
+pub fn end<S: Into<StrCow>>(name: S) -> u64 {
     let name = name.into();
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
@@ -241,8 +247,9 @@ pub fn end<S: Into<StrCow>>(name: S) {
             let timestamp = clock_ticks::precise_time_ns();
             event.end_ns = Some(timestamp);
             event.delta = Some(timestamp - event.start_ns);
+            event.delta
         }
-    });
+    }).unwrap()
 }
 
 /// Records a note on the current Span.
@@ -315,3 +322,5 @@ pub fn debug() {
         println!("{:?}", library);
     });
 }
+
+pub use svg::dump_svg;
