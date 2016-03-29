@@ -323,4 +323,25 @@ pub fn debug() {
     });
 }
 
+pub fn dump_stdout() {
+    pub fn print_span(span: &Span) {
+        let mut buf = String::new();
+        for _ in 0 .. span.depth {
+            buf.push_str("  ");
+        }
+        buf.push_str("| ");
+        buf.push_str(&format!("{}: {} ({}ms)", span.name, span.delta, span.delta as f32 / 1000000.0));
+        println!("{}", buf);
+        for child in &span.children {
+            print_span(child);
+        }
+    }
+
+    for frame in frames() {
+        for span in frame.roots {
+            print_span(&span);
+        }
+    }
+}
+
 pub use svg::dump_svg;
