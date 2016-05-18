@@ -1,6 +1,6 @@
 [package]
 name = "flame"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Ty Overby <ty@pre-alpha.com>"]
 description = "a profiling / flamegraph library"
 license = "MIT"
