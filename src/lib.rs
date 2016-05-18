@@ -386,5 +386,4 @@ pub fn dump_stdout() {
 }
 
 pub use svg::dump_svg;
-
 pub use html::dump_html;
