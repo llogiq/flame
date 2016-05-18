@@ -2,6 +2,7 @@
 extern crate clock_ticks;
 
 mod svg;
+mod html;
 
 use std::cell::{RefCell, Cell};
 use std::iter::Peekable;
@@ -29,6 +30,7 @@ struct Event {
     id: u32,
     parent: Option<u32>,
     name: StrCow,
+    collapse: bool,
     start_ns: u64,
     end_ns: Option<u64>,
     delta: Option<u64>,
@@ -76,6 +78,7 @@ pub struct Span {
     pub children: Vec<Span>,
     /// A list of notes that occurred inside this span
     pub notes: Vec<Note>,
+    collapsable: bool,
     _priv: (),
 }
 
@@ -92,18 +95,22 @@ pub struct Note {
 }
 
 pub struct SpanGuard {
-    name: Option<StrCow>
+    name: Option<StrCow>,
+    collapse: bool,
 }
 
 impl Drop for SpanGuard {
     fn drop(&mut self) {
         let name = self.name.take().unwrap();
-        end(name);
+        end_impl(name, self.collapse);
     }
 }
 
 impl SpanGuard {
     pub fn end(self) { }
+    pub fn end_collapse(mut self) {
+        self.collapse = true;
+    }
 }
 
 fn convert_events_to_span<'a, I>(events: I) -> Vec<Span>
@@ -128,6 +135,7 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
             depth: depth,
             children: vec![],
             notes: event.notes.clone(),
+            collapsable: event.collapse,
             _priv: ()
         };
 
@@ -143,6 +151,17 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
             let next = events.next().unwrap();
             let child = event_to_span(next, events, depth + 1);
             if let Some(child) = child {
+                // Try to collapse with the previous span
+                if span.children.len() != 0 && child.collapsable && child.children.len() == 0 {
+                    let last = span.children.last_mut().unwrap();
+                    if last.name == child.name && last.depth == child.depth {
+                        last.end_ns = child.end_ns;
+                        last.delta += child.delta;
+                        continue;
+                    }
+                }
+                
+                // Otherwise, it's a new node
                 span.children.push(child);
             }
         }
@@ -176,7 +195,7 @@ impl Library {
 pub fn start_guard<S: Into<StrCow>>(name: S) -> SpanGuard {
     let name = name.into();
     start(name.clone());
-    SpanGuard { name: Some(name) }
+    SpanGuard { name: Some(name), collapse: false }
 }
 
 /// Starts and ends a Span that lasts for the duration of the
@@ -212,6 +231,7 @@ pub fn start<S: Into<StrCow>>(name: S) {
             id: id,
             parent: collector.id_stack.last().cloned(),
             name: name.into(),
+            collapse: false,
             start_ns: clock_ticks::precise_time_ns(),
             end_ns: None,
             delta: None,
@@ -223,9 +243,7 @@ pub fn start<S: Into<StrCow>>(name: S) {
     });
 }
 
-/// Ends the current Span and returns the number
-/// of nanoseconds that passed.
-pub fn end<S: Into<StrCow>>(name: S) -> u64 {
+fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
     let name = name.into();
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
@@ -246,10 +264,33 @@ pub fn end<S: Into<StrCow>>(name: S) -> u64 {
         } else {
             let timestamp = clock_ticks::precise_time_ns();
             event.end_ns = Some(timestamp);
+            event.collapse = collapse;
             event.delta = Some(timestamp - event.start_ns);
             event.delta
         }
     }).unwrap()
+}
+
+/// Ends the current Span and returns the number
+/// of nanoseconds that passed.
+pub fn end<S: Into<StrCow>>(name: S) -> u64 {
+    end_impl(name, false)
+}
+
+/// Ends the current Span and returns the number of
+/// nanoseconds that passed.
+///
+/// If this span is a leaf node, and the previous span
+/// has the same name and depth, then collapse this
+/// span into the previous one.  The end_ns field will
+/// be updated to the end time of *this* span, and the
+/// delta field will be the sum of the deltas from this
+/// and the previous span.
+///
+/// This means that it is possible for end_ns - start_n
+/// to not be equal to delta.
+pub fn end_collapse<S: Into<StrCow>>(name: S) -> u64 {
+    end_impl(name, false)
 }
 
 /// Records a note on the current Span.
@@ -345,3 +386,5 @@ pub fn dump_stdout() {
 }
 
 pub use svg::dump_svg;
+
+pub use html::dump_html;

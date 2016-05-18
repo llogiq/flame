@@ -27,5 +27,5 @@ pub fn main() {
         flame::end("draw calls");
     flame::end("render");
 
-    flame::dump_svg(&mut File::create("out.svg").unwrap()).unwrap();
+    flame::dump_html(&mut File::create("out.html").unwrap()).unwrap();
 }
