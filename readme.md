@@ -44,4 +44,4 @@ fn main() {
 
 And here's a screenshot of the flamegraph produced by one of my projects:
 
-![flamegraph](./resources/screenshot.jpg "Logo Title Text 1")
+![flamegraph](./resources/screenshot.png "Flamegraph example")
