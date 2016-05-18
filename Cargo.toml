@@ -3,8 +3,9 @@ name = "flame"
 version = "0.1.4"
 authors = ["Ty Overby <ty@pre-alpha.com>"]
 description = "a profiling / flamegraph library"
-license = "MIT"
+license = "MIT/Apache-2.0"
 repository = "https://github.com/TyOverby/flame"
+exclude = ["resources/*.png"]
 
 [dependencies]
 clock_ticks = "0.1.0"
