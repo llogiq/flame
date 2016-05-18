@@ -26,15 +26,15 @@ fn main() {
     let x = read_a_file();
     flame::end("read file");
 
-    // Time the execution of a closure
+    // Time the execution of a closure.  (the result of the closure is returned)
     let y = flame::span_of("database query", || query_database());
 
-    // Time the execution of a block by placing a guard
+    // Time the execution of a block by creating a guard.
     let z = {
         let _ = flame::start_guard("cpu-heavy calculation");
         cpu_heavy_operations_1();
-        cpu_heavy_operations_2();
-    }
+        cpu_heavy_operations_2()
+    };
 
     // Dump the report to disk
     flame::dump_html(&mut File::create("flame-graph.html").unwrap()).unwrap();
@@ -42,6 +42,20 @@ fn main() {
 }
 ```
 
-And here's a screenshot of the flamegraph produced by one of my projects:
+And here's a screenshot of a flamegraph produced by `dump_html` (from a different project):
 
 ![flamegraph](./resources/screenshot.png "Flamegraph example")
+
+[llogiq](https://github.com/llogiq) has created [flamer](https://github.com/llogiq/flamer),
+a compiler plugin that automatically inserts flame instrumentation into annotated functions
+allowing you to write code like
+
+```rust
+#[flame]
+fn this_function_is_profiled() {
+    ...
+}
+```
+
+So if you are using a nightly version of rust, check it out; flamer is probably the easiest way
+to use flame!
