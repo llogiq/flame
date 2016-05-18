@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Span` struct in crate `flame`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Span">
+
+    <title>flame::Span - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='index.html'>flame</a></p><script>window.sidebarCurrent = {name: 'Span', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>flame</a>::<wbr><a class='struct' href=''>Span</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-227' class='srclink' href='../src/flame/src/lib.rs.html#66-83' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Span {
+    pub name: <a class='type' href='../flame/type.StrCow.html' title='flame::StrCow'>StrCow</a>,
+    pub start_ns: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub end_ns: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub delta: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
+    pub depth: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u16.html'>u16</a>,
+    pub children: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../flame/struct.Span.html' title='flame::Span'>Span</a>&gt;,
+    pub notes: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../flame/struct.Note.html' title='flame::Note'>Note</a>&gt;,
+    // some fields omitted
+}</pre><div class='docblock'><p>A named timespan.</p>
+
+<p>The span is the most important feature of Flame.  It denotes
+a chunk of time that is important to you.</p>
+
+<p>The Span records
+* Start and stop time
+* A list of children (also called sub-spans)
+* A list of notes</p>
+</div><h2 class='fields'>Fields</h2>
+<table><tr class='stab '>
+                             <td id='structfield.name'><code>name</code></td><td><div class='docblock'><p>The name of the span</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.start_ns'><code>start_ns</code></td><td><div class='docblock'><p>The timestamp of the start of the span</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.end_ns'><code>end_ns</code></td><td><div class='docblock'><p>The timestamp of the end of the span</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.delta'><code>delta</code></td><td><div class='docblock'><p>The time that ellapsed between start_ns and end_ns</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.depth'><code>depth</code></td><td><div class='docblock'><p>How deep this span is in the tree</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.children'><code>children</code></td><td><div class='docblock'><p>A list of spans that occurred inside this one</p>
+</div></td></tr><tr class='stab '>
+                             <td id='structfield.notes'><code>notes</code></td><td><div class='docblock'><p>A list of notes that occurred inside this span</p>
+</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><span class='in-band'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../flame/struct.Span.html' title='flame::Span'>Span</a></code></span><span class='out-of-band'><div class='ghost'></div><a id='src-237' class='srclink' href='../src/flame/src/lib.rs.html#65' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "flame";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script defer src="../search-index.js"></script>
+</body>
+</html>
