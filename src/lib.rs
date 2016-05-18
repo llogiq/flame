@@ -12,7 +12,7 @@ pub type StrCow = Cow<'static, str>;
 
 thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Library {
     past: Vec<PrivateFrame>,
     current: Option<PrivateFrame>
@@ -188,9 +188,9 @@ impl Library {
     }
 }
 
-/// Starts a Span and also returns a SpanGuard.
+/// Starts a `Span` and also returns a `SpanGuard`.
 ///
-/// When the SpanGuard is dropped (or the .end() is called on it),
+/// When the `SpanGuard` is dropped (or `.end()` is called on it),
 /// the span will automatically be ended.
 pub fn start_guard<S: Into<StrCow>>(name: S) -> SpanGuard {
     let name = name.into();
@@ -198,7 +198,7 @@ pub fn start_guard<S: Into<StrCow>>(name: S) -> SpanGuard {
     SpanGuard { name: Some(name), collapse: false }
 }
 
-/// Starts and ends a Span that lasts for the duration of the
+/// Starts and ends a `Span` that lasts for the duration of the
 /// function `f`.
 pub fn span_of<S, F, R>(name: S, f: F) -> R where
 S: Into<StrCow>,
@@ -261,13 +261,13 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
 
         if event.name != name {
             panic!("flame::end({}) attempted to end {}", &name, event.name);
-        } else {
-            let timestamp = clock_ticks::precise_time_ns();
-            event.end_ns = Some(timestamp);
-            event.collapse = collapse;
-            event.delta = Some(timestamp - event.start_ns);
-            event.delta
         }
+
+        let timestamp = clock_ticks::precise_time_ns();
+        event.end_ns = Some(timestamp);
+        event.collapse = collapse;
+        event.delta = Some(timestamp - event.start_ns);
+        event.delta
     }).unwrap()
 }
 
@@ -347,7 +347,7 @@ pub fn frames() -> Vec<Frame> {
     let mut out = vec![];
     LIBRARY.with(|library| {
         let library = library.borrow();
-        for past in library.past.iter() {
+        for past in &library.past {
             out.push(Frame::from_private(past));
         }
         if let Some(cur) = library.current.as_ref() {
