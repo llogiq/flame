@@ -160,7 +160,7 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
                         continue;
                     }
                 }
-                
+
                 // Otherwise, it's a new node
                 span.children.push(child);
             }
@@ -365,7 +365,7 @@ pub fn debug() {
 }
 
 pub fn dump_stdout() {
-    pub fn print_span(span: &Span) {
+    fn print_span(span: &Span) {
         let mut buf = String::new();
         for _ in 0 .. span.depth {
             buf.push_str("  ");
