@@ -1,4 +1,5 @@
 lang: c
+sudo: required
 env:
   matrix:
     - CHANNEL='stable'
