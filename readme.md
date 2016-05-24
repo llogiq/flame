@@ -22,6 +22,8 @@ Here's an example of how to use some of FLAMEs APIs:
 ```rust
 extern crate flame;
 
+use std::fs::File;
+
 fn main() {
     // Manual `start` and `end`
     flame::start("read file");
