@@ -7,6 +7,8 @@ pub fn dump_html<W: Write>(out: &mut W) -> IoResult<()> {
         try!(writeln!(out, "{{"));
         try!(writeln!(out, r#"name: "{}","#, span.name));
         try!(writeln!(out, "value: {},", span.delta));
+        try!(writeln!(out, "start: {},", span.start_ns));
+        try!(writeln!(out, "end: {},", span.end_ns));
         try!(writeln!(out, "children: ["));
         for child in &span.children {
             try!(dump_spans(out, child));
@@ -40,7 +42,20 @@ pub fn dump_html<W: Write>(out: &mut W) -> IoResult<()> {
         <script>
             var width = document.body.offsetWidth;
             var height = document.body.offsetHeight - 100;
-            var flamegraph = d3.flameGraph().width(width).height(height).tooltip(false);
+            var flamegraph =
+                d3.flameGraph()
+                  .width(width)
+                  .height(height)
+                  .tooltip(false)
+                  .sort(function(a, b){{
+                    if (a.start < b.start) {{
+                        return -1;
+                    }} else if (a.start > b.start) {{
+                        return 1;
+                    }} else {{
+                        return 0;
+                    }}
+                  }});
             d3.select("body").datum({{ children: [
 "#, include_str!("../resources/flameGraph.css"), include_str!("../resources/d3.js"), include_str!("../resources/d3-tip.js"), include_str!("../resources/flameGraph.js")));
 
