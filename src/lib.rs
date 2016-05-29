@@ -283,7 +283,7 @@ pub fn end<S: Into<StrCow>>(name: S) -> u64 {
 /// wrapping all returned expressions is easier than creating
 /// a temporary variable to hold the result.
 pub fn end_with<S: Into<StrCow>, R>(name: S, result: R) -> R {
-    end_impl(name, false)
+    end_impl(name, false);
     result
 }
 
