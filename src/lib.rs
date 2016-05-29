@@ -277,6 +277,16 @@ pub fn end<S: Into<StrCow>>(name: S) -> u64 {
     end_impl(name, false)
 }
 
+/// Ends the current Span and returns a given result.
+///
+/// This is mainly useful for code generation / plugins where
+/// wrapping all returned expressions is easier than creating
+/// a temporary variable to hold the result.
+pub fn end_with<S: Into<StrCow>, R>(name: S, result: R) -> R {
+    end_impl(name, false)
+    result
+}
+
 /// Ends the current Span and returns the number of
 /// nanoseconds that passed.
 ///
