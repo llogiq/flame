@@ -100,3 +100,13 @@ fn cant_note() {
     flame::clear();
     flame::note("hi", None);
 }
+
+#[test]
+fn end_with() {
+    fn _inner() -> u32 {
+        flame::clear();
+        flame::start("w");
+        flame::end_with("w", 1)
+    }
+    assert_eq!(1, _inner());
+}
