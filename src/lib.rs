@@ -198,6 +198,15 @@ pub fn start_guard<S: Into<StrCow>>(name: S) -> SpanGuard {
     SpanGuard { name: Some(name), collapse: false }
 }
 
+/// Run a callable within a Frame.
+pub fn frame<S: Into<StrCow>, R, F: FnOnce() -> R>(name: S, f: F) -> R {
+    let name = name.into();
+    let _guard = start_guard(name);
+    let result = f();
+    _guard.end(); // to avoid optimizing out the guard
+    result
+}
+
 /// Starts and ends a `Span` that lasts for the duration of the
 /// function `f`.
 pub fn span_of<S, F, R>(name: S, f: F) -> R where
