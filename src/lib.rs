@@ -356,7 +356,7 @@ pub fn clear() {
         let mut library = library.borrow_mut();
         library.past = vec![];
         library.current = None;
-        library.epoch = Instant:now();
+        library.epoch = Instant::now();
     });
 }
 
