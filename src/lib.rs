@@ -190,7 +190,7 @@ impl Library {
         Library {
             past: vec![],
             current: None,
-            instant: Instant::now(),
+            epoch: Instant::now(),
         }
     }
 }
