@@ -12,7 +12,7 @@ pub type StrCow = Cow<'static, str>;
 
 thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Library {
     past: Vec<PrivateFrame>,
     current: Option<PrivateFrame>,
