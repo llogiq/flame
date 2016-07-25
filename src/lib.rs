@@ -222,6 +222,7 @@ F: FnOnce() -> R
 pub fn start<S: Into<StrCow>>(name: S) {
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
+        let epoch = library.epoch;
         if library.current.is_none() {
             library.current = Some(PrivateFrame {
                 next_id: 0,
@@ -239,7 +240,7 @@ pub fn start<S: Into<StrCow>>(name: S) {
             parent: collector.id_stack.last().cloned(),
             name: name.into(),
             collapse: false,
-            start_ns: ns_since_epoch(library.epoch),
+            start_ns: ns_since_epoch(epoch),
             end_ns: None,
             delta: None,
             notes: vec![]
@@ -254,6 +255,7 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
     let name = name.into();
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
+        let epoch = library.epoch;
         let collector = match library.current.as_mut() {
             Some(x) => x,
             None => panic!("flame::end({}) called without a currently running span!", &name)
@@ -270,7 +272,7 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
             panic!("flame::end({}) attempted to end {}", &name, event.name);
         }
 
-        let timestamp = ns_since_epoch(library.epoch);
+        let timestamp = ns_since_epoch(epoch);
         event.end_ns = Some(timestamp);
         event.collapse = collapse;
         event.delta = Some(timestamp - event.start_ns);
@@ -317,6 +319,7 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
 
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
+        let epoch = library.epoch;
         if library.current.is_none() {
             panic!("flame::note({:?}) called without a currently running span!", &name);
         }
@@ -333,7 +336,7 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
         event.notes.push(Note {
             name: name,
             description: description,
-            instant: ns_since_epoch(library.epoch),
+            instant: ns_since_epoch(epoch),
             _priv: ()
         });
     });
