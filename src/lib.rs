@@ -1,5 +1,4 @@
 #![allow(unused)]
-extern crate clock_ticks;
 
 mod svg;
 mod html;
@@ -7,15 +6,17 @@ mod html;
 use std::cell::{RefCell, Cell};
 use std::iter::Peekable;
 use std::borrow::Cow;
+use std::time::{Duration, Instant};
 
 pub type StrCow = Cow<'static, str>;
 
 thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Library {
     past: Vec<PrivateFrame>,
-    current: Option<PrivateFrame>
+    current: Option<PrivateFrame>,
+    epoch: Instant,
 }
 
 #[derive(Debug)]
@@ -113,6 +114,11 @@ impl SpanGuard {
     }
 }
 
+fn ns_since_epoch(epoch: Instant) -> u64 {
+    let elapsed = epoch.elapsed();
+    elapsed.as_secs() * 1000_000_000 + elapsed.subsec_nanos() as u64
+}
+
 fn convert_events_to_span<'a, I>(events: I) -> Vec<Span>
 where I: Iterator<Item = &'a Event> {
     let mut iterator = events.peekable();
@@ -183,7 +189,8 @@ impl Library {
     fn new() -> Library {
         Library {
             past: vec![],
-            current: None
+            current: None,
+            epoch: Instant::now(),
         }
     }
 }
@@ -215,6 +222,7 @@ F: FnOnce() -> R
 pub fn start<S: Into<StrCow>>(name: S) {
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
+        let epoch = library.epoch;
         if library.current.is_none() {
             library.current = Some(PrivateFrame {
                 next_id: 0,
@@ -232,7 +240,7 @@ pub fn start<S: Into<StrCow>>(name: S) {
             parent: collector.id_stack.last().cloned(),
             name: name.into(),
             collapse: false,
-            start_ns: clock_ticks::precise_time_ns(),
+            start_ns: ns_since_epoch(epoch),
             end_ns: None,
             delta: None,
             notes: vec![]
@@ -247,6 +255,7 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
     let name = name.into();
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
+        let epoch = library.epoch;
         let collector = match library.current.as_mut() {
             Some(x) => x,
             None => panic!("flame::end({}) called without a currently running span!", &name)
@@ -263,7 +272,7 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
             panic!("flame::end({}) attempted to end {}", &name, event.name);
         }
 
-        let timestamp = clock_ticks::precise_time_ns();
+        let timestamp = ns_since_epoch(epoch);
         event.end_ns = Some(timestamp);
         event.collapse = collapse;
         event.delta = Some(timestamp - event.start_ns);
@@ -310,6 +319,7 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
 
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
+        let epoch = library.epoch;
         if library.current.is_none() {
             panic!("flame::note({:?}) called without a currently running span!", &name);
         }
@@ -326,7 +336,7 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
         event.notes.push(Note {
             name: name,
             description: description,
-            instant: clock_ticks::precise_time_ns(),
+            instant: ns_since_epoch(epoch),
             _priv: ()
         });
     });
@@ -349,6 +359,7 @@ pub fn clear() {
         let mut library = library.borrow_mut();
         library.past = vec![];
         library.current = None;
+        library.epoch = Instant::now();
     });
 }
 
