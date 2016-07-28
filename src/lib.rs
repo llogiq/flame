@@ -47,7 +47,7 @@ struct Event {
 ///
 /// If you don't have any sort of repeatable logic that you'd like to
 /// show off in your flamegraph, using a single frame is totally acceptable.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Frame {
     /// A list of spans contained inside this frame.
     pub roots: Vec<Span>,
@@ -63,7 +63,7 @@ pub struct Frame {
 /// * Start and stop time
 /// * A list of children (also called sub-spans)
 /// * A list of notes
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Span {
     /// The name of the span
     pub name: StrCow,
