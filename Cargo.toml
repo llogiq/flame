@@ -14,13 +14,13 @@ default = []
 json = ["serde", "serde_macros", "serde_json"]
 
 [dependencies.serde]
-version = "*"
+version = "0.7"
 optional = true
 
 [dependencies.serde_macros]
-version = "*"
+version = "0.7"
 optional = true
 
 [dependencies.serde_json]
-version = "*"
+version = "0.7"
 optional = true
