@@ -1,6 +1,6 @@
 [package]
 name = "flame"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Ty Overby <ty@pre-alpha.com>"]
 license = "MIT/Apache-2.0"
 exclude = ["resources/*.png"]
@@ -9,4 +9,18 @@ description = "a profiling / flamegraph library"
 repository = "https://github.com/TyOverby/flame"
 documentation = "http://tyoverby.com/flame/flame/index.html"
 
-[dependencies]
+[features]
+default = []
+json = ["serde", "serde_macros", "serde_json"]
+
+[dependencies.serde]
+version = "*"
+optional = true
+
+[dependencies.serde_macros]
+version = "*"
+optional = true
+
+[dependencies.serde_json]
+version = "*"
+optional = true

@@ -1,5 +1,13 @@
 #![allow(unused)]
 
+#![cfg_attr(feature="json", feature(custom_derive, plugin))]
+#![cfg_attr(feature="json", plugin(serde_macros))]
+
+#[cfg(feature = "json")]
+extern crate serde;
+#[cfg(feature = "json")]
+extern crate serde_json;
+
 mod svg;
 mod html;
 
@@ -48,9 +56,11 @@ struct Event {
 /// If you don't have any sort of repeatable logic that you'd like to
 /// show off in your flamegraph, using a single frame is totally acceptable.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "json", derive(Serialize))]
 pub struct Frame {
     /// A list of spans contained inside this frame.
     pub roots: Vec<Span>,
+    #[cfg_attr(feature = "json", serde(skip_serializing))]
     _priv: (),
 }
 
@@ -64,6 +74,7 @@ pub struct Frame {
 /// * A list of children (also called sub-spans)
 /// * A list of notes
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "json", derive(Serialize))]
 pub struct Span {
     /// The name of the span
     pub name: StrCow,
@@ -80,11 +91,13 @@ pub struct Span {
     /// A list of notes that occurred inside this span
     pub notes: Vec<Note>,
     collapsable: bool,
+    #[cfg_attr(feature = "json", serde(skip_serializing))]
     _priv: (),
 }
 
 /// A note for use in debugging.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "json", derive(Serialize))]
 pub struct Note {
     /// A short name describing what happened at some instant in time
     pub name: StrCow,
@@ -182,6 +195,18 @@ impl Frame {
     fn from_private(p: &PrivateFrame) -> Frame {
         let v = convert_events_to_span(p.all.iter());
         Frame { roots: v, _priv: () }
+    }
+
+    #[cfg(feature = "json")]
+    pub fn into_json_string(&self) -> String {
+        ::serde_json::to_string_pretty(self).unwrap()
+    }
+}
+
+impl Span {
+    #[cfg(feature = "json")]
+    pub fn into_json_string(&self) -> String {
+        ::serde_json::to_string_pretty(self).unwrap()
     }
 }
 
