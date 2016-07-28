@@ -1,8 +1,6 @@
 /// <reference path="d3.d.ts" />
 
-var data = [4, 8, 15, 16, 23, 42];
-
-var data_2 = {
+var data = {
     start: 159142774583025,
     end: 159142774611944,
     name: "whole program",
@@ -99,7 +97,9 @@ function process(span, depth) {
         process(span.children[i], depth + 1);
     }
 }
-process(data_2, 0);
+
+process(data, 0);
+
 var min_timestamp = all_timestamps.reduce(function (a, b) {return Math.min(a, b); });
 
 var width = document.body.clientWidth;
@@ -125,17 +125,20 @@ var axis =
           return "" + ((n - min_timestamp) / 1e6);
       });
 
-function update(data, scale) {
+function update(selector, data, scale) {
     axis.scale(scale);
-    chart.select("#axis").transition().duration(duration).ease(ease).call(axis);
+    chart.select("#axis")
+         .transition().duration(duration).ease(ease)
+         .call(axis);
 
-    var bar = chart.select("#bars").selectAll("g").data(out);
+    var bar = chart.select(selector).selectAll("g").data(out);
 
     var group = bar.enter().append("g");
     group.append("rect");
     group.append("text");
 
-    bar.transition().duration(duration).ease(ease)
+    bar
+       .transition().duration(duration).ease(ease)
        .attr("transform", function(d) {
             var x_offset = scale(d.start);
             var y_offset = d.depth * barHeight + axis_height;
@@ -145,7 +148,7 @@ function update(data, scale) {
 
     function resize_graph(d) {
         var new_x = d3.scale.linear().domain([d.start, d.end]).range([0, width]);
-        update(out, new_x);
+        update(selector, out, new_x);
     }
 
     // Rectangle
@@ -181,4 +184,4 @@ function update(data, scale) {
        });
 }
 
-update(out, x);
+update("#bars", out, x);
