@@ -10,4 +10,3 @@ repository = "https://github.com/TyOverby/flame"
 documentation = "http://tyoverby.com/flame/flame/index.html"
 
 [dependencies]
-clock_ticks = "0.1.0"
