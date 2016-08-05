@@ -1,4 +1,3 @@
-
 extern crate flame;
 
 #[test]
@@ -34,11 +33,9 @@ fn single_event() {
     flame::start("event1");
     flame::end("event1");
 
-    let frames = flame::frames();
-    assert!(frames.len() == 1);
-    let frame = &frames[0];
-    assert!(frame.roots.len() == 1);
-    assert!(frame.roots[0].name == "event1");
+    let spans = flame::spans();
+    assert!(spans.len() == 1);
+    assert!(spans[0].name == "event1");
 }
 
 #[test]
@@ -49,13 +46,12 @@ fn single_nested() {
         flame::end("event2");
     flame::end("event1");
 
-    let frames = flame::frames();
-    assert!(frames.len() == 1);
-    let frame = &frames[0];
-    assert!(frame.roots.len() == 1);
-    assert!(frame.roots[0].name == "event1");
-    assert!(frame.roots[0].depth == 0);
-    let first = &frame.roots[0];
+    let spans = flame::spans();
+    assert!(spans.len() == 1);
+    assert!(spans[0].name == "event1");
+    assert!(spans[0].depth == 0);
+
+    let first = &spans[0];
     assert!(first.children.len() == 1);
     assert!(first.children[0].name == "event2");
     assert!(first.children[0].depth == 1);
@@ -71,19 +67,48 @@ fn double_nested() {
         flame::end("event3");
     flame::end("event1");
 
-    let frames = flame::frames();
-    assert!(frames.len() == 1);
-    let frame = &frames[0];
-    assert!(frame.roots.len() == 1);
-    assert!(frame.roots[0].name == "event1");
-    assert!(frame.roots[0].depth == 0);
+    let spans = flame::spans();
+    assert!(spans.len() == 1);
+    assert!(spans[0].name == "event1");
+    assert!(spans[0].depth == 0);
 
-    let first = &frame.roots[0];
+    let first = &spans[0];
     assert!(first.children.len() == 2);
     assert!(first.children[0].name == "event2");
     assert!(first.children[1].name == "event3");
     assert!(first.children[0].depth == 1);
     assert!(first.children[1].depth == 1);
+}
+
+#[test]
+fn threads() {
+    use std::thread::spawn;
+    flame::clear();
+    flame::start("main thread");
+    let mut handles = vec![];
+
+    for i in 0 .. 10 {
+        handles.push(spawn(move || {
+            if i % 2 == 0 {
+                let s = format!("thread {}", i);
+                flame::start(s.clone());
+                flame::end(s);
+            }
+        }));
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    flame::end("main thread");
+
+    let threads = flame::threads().into_iter().filter(|&(_, _, ref spans)| {
+        spans.len() == 1 && (spans[0].name.starts_with("thread ") ||
+                             spans[0].name.starts_with("main thread"))
+    });
+
+    assert_eq!(threads.count(), 6);
 }
 
 #[test]

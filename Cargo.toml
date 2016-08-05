@@ -13,6 +13,10 @@ documentation = "http://tyoverby.com/flame/flame/index.html"
 default = []
 json = ["serde", "serde_macros", "serde_json"]
 
+[dependencies]
+lazy_static = "0.2.1"
+thread-id = "2.0.0"
+
 [dependencies.serde]
 version = "0.7"
 optional = true

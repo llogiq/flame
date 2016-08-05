@@ -3,27 +3,30 @@
 #![cfg_attr(feature="json", feature(custom_derive, plugin))]
 #![cfg_attr(feature="json", plugin(serde_macros))]
 
+#[macro_use]
+extern crate lazy_static;
+extern crate thread_id;
 #[cfg(feature = "json")]
 extern crate serde;
 #[cfg(feature = "json")]
 extern crate serde_json;
 
-mod svg;
 mod html;
 
 use std::cell::{RefCell, Cell};
 use std::iter::Peekable;
 use std::borrow::Cow;
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 pub type StrCow = Cow<'static, str>;
 
+lazy_static!(static ref ALL_THREADS: Mutex<Vec<(usize, Option<String>, PrivateFrame)>> = Mutex::new(Vec::new()););
 thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
 #[derive(Debug)]
 struct Library {
-    past: Vec<PrivateFrame>,
-    current: Option<PrivateFrame>,
+    current: PrivateFrame,
     epoch: Instant,
 }
 
@@ -44,24 +47,6 @@ struct Event {
     end_ns: Option<u64>,
     delta: Option<u64>,
     notes: Vec<Note>,
-}
-
-/// A chunk of spans that are meant to be grouped together into a "frame".
-///
-/// The naming (and a possible usecase) comes from gaming, where a bunch
-/// of logic and rendering happens repeatedly every "frame".
-/// When developing a game, a flamegraph can be used to analyse and debug
-/// performance issues when you see that a particular frame is oddly shaped.
-///
-/// If you don't have any sort of repeatable logic that you'd like to
-/// show off in your flamegraph, using a single frame is totally acceptable.
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "json", derive(Serialize))]
-pub struct Frame {
-    /// A list of spans contained inside this frame.
-    pub roots: Vec<Span>,
-    #[cfg_attr(feature = "json", serde(skip_serializing))]
-    _priv: (),
 }
 
 /// A named timespan.
@@ -190,19 +175,6 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
     }
 }
 
-
-impl Frame {
-    fn from_private(p: &PrivateFrame) -> Frame {
-        let v = convert_events_to_span(p.all.iter());
-        Frame { roots: v, _priv: () }
-    }
-
-    #[cfg(feature = "json")]
-    pub fn into_json_string(&self) -> String {
-        ::serde_json::to_string_pretty(self).unwrap()
-    }
-}
-
 impl Span {
     #[cfg(feature = "json")]
     pub fn into_json_string(&self) -> String {
@@ -213,10 +185,29 @@ impl Span {
 impl Library {
     fn new() -> Library {
         Library {
-            past: vec![],
-            current: None,
+            current: PrivateFrame {
+                all: vec![],
+                id_stack: vec![],
+                next_id: 0,
+            },
             epoch: Instant::now(),
         }
+    }
+}
+
+impl Drop for Library {
+    fn drop(&mut self) {
+        let mut frame = PrivateFrame {
+            all: vec![],
+            id_stack: vec![],
+            next_id: 0,
+        };
+        ::std::mem::swap(&mut frame, &mut self.current);
+
+        let mut handle = ALL_THREADS.lock().unwrap();
+        let thread_name = ::std::thread::current().name().map(Into::into);
+        let thread_id = ::thread_id::get();
+        handle.push((thread_id, thread_name, frame))
     }
 }
 
@@ -248,15 +239,8 @@ pub fn start<S: Into<StrCow>>(name: S) {
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         let epoch = library.epoch;
-        if library.current.is_none() {
-            library.current = Some(PrivateFrame {
-                next_id: 0,
-                all: vec![],
-                id_stack: vec![],
-            });
-        }
 
-        let collector = library.current.as_mut().unwrap();
+        let collector = &mut library.current;
         let id = collector.next_id;
         collector.next_id += 1;
 
@@ -281,10 +265,7 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         let epoch = library.epoch;
-        let collector = match library.current.as_mut() {
-            Some(x) => x,
-            None => panic!("flame::end({}) called without a currently running span!", &name)
-        };
+        let collector = &mut library.current;
 
         let current_id = match collector.id_stack.pop() {
             Some(id) => id,
@@ -345,11 +326,8 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         let epoch = library.epoch;
-        if library.current.is_none() {
-            panic!("flame::note({:?}) called without a currently running span!", &name);
-        }
 
-        let collector = library.current.as_mut().unwrap();
+        let collector = &mut library.current;
 
         let current_id = match collector.id_stack.last() {
             Some(id) => *id,
@@ -367,39 +345,43 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
     });
 }
 
-/// Starts a new frame.
-pub fn next_frame() {
-    LIBRARY.with(|library| {
-        let mut library = library.borrow_mut();
-        if let Some(prev) = library.current.take() {
-            library.past.push(prev);
-        }
-    });
-}
-
 /// Clears all of the recorded info that Flame has
 /// tracked.
 pub fn clear() {
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
-        library.past = vec![];
-        library.current = None;
+        library.current = PrivateFrame {
+            all: vec![],
+            id_stack: vec![],
+            next_id: 0,
+        };
         library.epoch = Instant::now();
     });
+
+    let mut handle = ALL_THREADS.lock().unwrap();
+    handle.clear();
 }
 
-/// Returns a list of frames
-pub fn frames() -> Vec<Frame> {
-    let mut out = vec![];
+/// Returns a list of spans from the current thread
+pub fn spans() -> Vec<Span> {
     LIBRARY.with(|library| {
         let library = library.borrow();
-        for past in &library.past {
-            out.push(Frame::from_private(past));
-        }
-        if let Some(cur) = library.current.as_ref() {
-            out.push(Frame::from_private(cur))
-        }
-    });
+        let cur = &library.current;
+        convert_events_to_span(cur.all.iter())
+    })
+}
+
+pub fn threads() -> Vec<(usize, Option<String>, Vec<Span>)> {
+    let mut handle = ALL_THREADS.lock().unwrap();
+
+    let my_thread_name = ::std::thread::current().name().map(Into::into);
+    let my_thread_id = ::thread_id::get();
+
+    let mut out = vec![ (my_thread_id, my_thread_name, spans()) ];
+    for &(id, ref name, ref frm) in &*handle {
+        out.push((id, name.clone(), convert_events_to_span(frm.all.iter())));
+    }
+
     out
 }
 
@@ -424,12 +406,9 @@ pub fn dump_stdout() {
         }
     }
 
-    for frame in frames() {
-        for span in frame.roots {
-            print_span(&span);
-        }
+    for span in spans() {
+        print_span(&span);
     }
 }
 
-pub use svg::dump_svg;
 pub use html::dump_html;
