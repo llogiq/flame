@@ -1,18 +1,7 @@
-import * as Collections from 'typescript-collections';
 
 interface Timespan {
     startTime: number;
     endTime: number;
-}
-
-class TimespanSingular implements Timespan {
-    startTime: number;
-    endTime: number;
-    constructor(startTime: number, endTime: number) {
-        this.startTime = startTime;
-        this.endTime = endTime;
-    }
-
 }
 
 class TimespanSet implements Timespan {
@@ -32,7 +21,7 @@ class TimespanSet implements Timespan {
         if (t.startTime < this.startTime) {
             this.startTime = t.startTime;
         }
-        if (t.endTime < this.endTime) {
+        if (t.endTime > this.endTime) {
             this.endTime = t.endTime;
         }
         this.timespans.push(t);
@@ -62,6 +51,7 @@ function get_non_overlapping(timespans: Array<Timespan>) {
         if (!found) {
             sets.push(new TimespanSet(t));
         }
+
     }
     return sets;
 }

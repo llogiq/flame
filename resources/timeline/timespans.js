@@ -1,11 +1,3 @@
-"use strict";
-var TimespanSingular = (function () {
-    function TimespanSingular(startTime, endTime) {
-        this.startTime = startTime;
-        this.endTime = endTime;
-    }
-    return TimespanSingular;
-}());
 var TimespanSet = (function () {
     function TimespanSet(ts) {
         this.timespans = new Array();
@@ -19,7 +11,7 @@ var TimespanSet = (function () {
         if (t.startTime < this.startTime) {
             this.startTime = t.startTime;
         }
-        if (t.endTime < this.endTime) {
+        if (t.endTime > this.endTime) {
             this.endTime = t.endTime;
         }
         this.timespans.push(t);
