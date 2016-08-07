@@ -90,6 +90,18 @@ pub struct Note {
     pub description: Option<StrCow>,
     /// The time that the note was added
     pub instant: u64,
+    #[cfg_attr(feature = "json", serde(skip_serializing))]
+    _priv: (),
+}
+
+/// A collection of events that happened on a single thread.
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "json", derive(Serialize))]
+pub struct Thread {
+    pub id: usize,
+    pub name: Option<String>,
+    pub spans: Vec<Span>,
+    #[cfg_attr(feature = "json", serde(skip_serializing))]
     _priv: (),
 }
 
@@ -177,8 +189,20 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
 
 impl Span {
     #[cfg(feature = "json")]
-    pub fn into_json_string(&self) -> String {
+    pub fn into_json(&self) -> String {
         ::serde_json::to_string_pretty(self).unwrap()
+    }
+}
+
+impl Thread {
+    #[cfg(feature = "json")]
+    pub fn into_json(&self) -> String {
+        ::serde_json::to_string_pretty(self).unwrap()
+    }
+
+    #[cfg(feature = "json")]
+    pub fn into_json_list(threads: &Vec<Thread>) -> String {
+        ::serde_json::to_string_pretty(threads).unwrap()
     }
 }
 
@@ -195,19 +219,28 @@ impl Library {
     }
 }
 
+fn commit_impl(library: &mut Library) {
+    let mut frame = PrivateFrame {
+        all: vec![],
+        id_stack: vec![],
+        next_id: 0,
+    };
+    ::std::mem::swap(&mut frame, &mut library.current);
+
+    let mut handle = ALL_THREADS.lock().unwrap();
+    let thread_name = ::std::thread::current().name().map(Into::into);
+    let thread_id = ::thread_id::get();
+    handle.push((thread_id, thread_name, frame))
+}
+
+pub fn commit_thread() {
+    LIBRARY.with(|library| commit_impl(&mut *library.borrow_mut()));
+    println!("committing");
+}
+
 impl Drop for Library {
     fn drop(&mut self) {
-        let mut frame = PrivateFrame {
-            all: vec![],
-            id_stack: vec![],
-            next_id: 0,
-        };
-        ::std::mem::swap(&mut frame, &mut self.current);
-
-        let mut handle = ALL_THREADS.lock().unwrap();
-        let thread_name = ::std::thread::current().name().map(Into::into);
-        let thread_id = ::thread_id::get();
-        handle.push((thread_id, thread_name, frame))
+        commit_impl(self);
     }
 }
 
@@ -371,15 +404,26 @@ pub fn spans() -> Vec<Span> {
     })
 }
 
-pub fn threads() -> Vec<(usize, Option<String>, Vec<Span>)> {
+pub fn threads() -> Vec<Thread> {
     let mut handle = ALL_THREADS.lock().unwrap();
 
     let my_thread_name = ::std::thread::current().name().map(Into::into);
     let my_thread_id = ::thread_id::get();
 
-    let mut out = vec![ (my_thread_id, my_thread_name, spans()) ];
+    let mut out = vec![ Thread {
+        id: my_thread_id,
+        name: my_thread_name,
+        spans: spans(),
+        _priv: (),
+    }];
+
     for &(id, ref name, ref frm) in &*handle {
-        out.push((id, name.clone(), convert_events_to_span(frm.all.iter())));
+        out.push(Thread {
+            id: id,
+            name: name.clone(),
+            spans: convert_events_to_span(frm.all.iter()),
+            _priv: (),
+        });
     }
 
     out
