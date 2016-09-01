@@ -235,7 +235,6 @@ fn commit_impl(library: &mut Library) {
 
 pub fn commit_thread() {
     LIBRARY.with(|library| commit_impl(&mut *library.borrow_mut()));
-    println!("committing");
 }
 
 impl Drop for Library {
