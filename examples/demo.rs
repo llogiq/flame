@@ -28,4 +28,5 @@ pub fn main() {
     flame::end("render");
 
     flame::dump_html(&mut File::create("out.html").unwrap()).unwrap();
+    flame::dump_stdout();
 }

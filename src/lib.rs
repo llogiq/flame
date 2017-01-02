@@ -436,17 +436,31 @@ pub fn debug() {
 }
 
 pub fn dump_stdout() {
-    fn print_span(span: &Span) {
+    fn print_span(span: &Span) -> f32 {
         let mut buf = String::new();
         for _ in 0 .. span.depth {
             buf.push_str("  ");
         }
         buf.push_str("| ");
-        buf.push_str(&format!("{}: {} ({}ms)", span.name, span.delta, span.delta as f32 / 1000000.0));
+        let ms = span.delta as f32 / 1000000.0;
+        buf.push_str(&format!("{}: {}ms", span.name, ms));
         println!("{}", buf);
+        let mut missing = ms;
         for child in &span.children {
-            print_span(child);
+            missing -= print_span(child);
         }
+
+        if !span.children.is_empty() {
+            let mut buf = String::new();
+            for _ in 0 .. (span.depth + 1) {
+                buf.push_str("  ");
+            }
+            buf.push_str("+ ");
+            buf.push_str(&format!("{}ms", missing));
+            println!("{}", buf);
+        }
+
+        ms
     }
 
     for span in spans() {
