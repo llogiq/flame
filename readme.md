@@ -44,8 +44,10 @@ fn main() {
 
     // Dump the report to disk
     flame::dump_html(&mut File::create("flame-graph.html").unwrap()).unwrap();
+    
     // Or read and process the data yourself!
-    let frames = flame::frames();
+    let spans = flame::spans();
+    
     println!("{} {} {}", x, y, z);
 }
 ```
