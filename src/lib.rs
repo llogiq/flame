@@ -463,8 +463,12 @@ pub fn dump_stdout() {
         ms
     }
 
-    for span in spans() {
-        print_span(&span);
+    for thread in threads() {
+        println!("THREAD: {}", thread.id);
+        for span in thread.spans {
+            print_span(&span);
+        }
+        println!("");
     }
 }
 
