@@ -15,7 +15,7 @@ Simply use any of FLAMEs APIs to annotate the start and end of a
 block code that you want timing information from, and FLAME will
 organize these timings hierarchically.
 
-### [Docs](http://tyoverby.com/flame/flame/index.html)
+### [Docs](https://docs.rs/flame/0.1.11/flame/)
 
 Here's an example of how to use some of FLAMEs APIs:
 
