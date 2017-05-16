@@ -135,3 +135,11 @@ fn end_with() {
     }
     assert_eq!(1, _inner());
 }
+
+#[test]
+fn framed() {
+    fn _inner(i: u32) -> u32 {
+        i * 2
+    }
+    assert_eq!(42, flame::frame("f", || _inner(21)));
+}
