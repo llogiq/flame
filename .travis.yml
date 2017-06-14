@@ -1,11 +1,1 @@
 language: rust
-rust:
-- stable
-- beta
-- nightly
-env:
-  global:
-  - secure: SZSxNqg9wiGx8EnJhifJ2kb/aCRcLim9TzTQyfurPqd8qVGkDOeVjTtbs+VTxLVXYtMJAz+YYnrQDwsu8kc/uYpQajU+gRMqNGEP5gNj3Ha5iNGDasAS6piIHQSMROayZ+D9g22nlGnjk8t9eZtLHC/Z8IWMCnjcIHvqMFY6cgI=
-script:
-    - cargo build
-    - cargo test
