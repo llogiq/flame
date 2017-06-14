@@ -38,7 +38,7 @@ fn main() {
         let _guard = flame::start_guard("cpu-heavy calculation");
         cpu_heavy_operations_1();
         // Notes can be used to annotate a particular instant in time.
-        flame::note("something interesting happened");
+        flame::note("something interesting happened", None);
         cpu_heavy_operations_2()
     };
 
