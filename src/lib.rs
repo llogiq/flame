@@ -41,6 +41,46 @@
 //! ```
 
 
+//! Here's an example of how to use some of FLAMEs APIs:
+//!
+//! ```
+//! extern crate flame;
+//!
+//! use std::fs::File;
+//!
+//! pub fn main() {
+//!     // Manual `start` and `end`
+//!     flame::start("read file");
+//!     let x = read_a_file();
+//!     flame::end("read file");
+//!
+//!     // Time the execution of a closure.  (the result of the closure is returned)
+//!     let y = flame::span_of("database query", || query_database());
+//!
+//!     // Time the execution of a block by creating a guard.
+//!     let z = {
+//!         let _guard = flame::start_guard("cpu-heavy calculation");
+//!         cpu_heavy_operations_1();
+//!         // Notes can be used to annotate a particular instant in time.
+//!         flame::note("something interesting happened", None);
+//!         cpu_heavy_operations_2()
+//!     };
+//!
+//!     // Dump the report to disk
+//!     flame::dump_html(&mut File::create("flame-graph.html").unwrap()).unwrap();
+//!
+//!     // Or read and process the data yourself!
+//!     let spans = flame::spans();
+//!
+//!     println!("{} {} {}", x, y, z);
+//! }
+//!
+//! # fn read_a_file() -> bool { true }
+//! # fn query_database() -> bool { true }
+//! # fn cpu_heavy_operations_1() {}
+//! # fn cpu_heavy_operations_2() -> bool { true }
+//! ```
+
 #[macro_use]
 extern crate lazy_static;
 extern crate thread_id;
