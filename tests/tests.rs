@@ -103,7 +103,7 @@ fn threads() {
 
     flame::end("main thread");
 
-    let threads = flame::threads().into_iter().filter(|&flame::Thread{ ref spans, ..}| {
+    let threads = flame::threads().into_iter().filter(|&flame::Thread { ref spans, .. }| {
         spans.len() == 1 && (spans[0].name.starts_with("thread ") ||
                              spans[0].name.starts_with("main thread"))
     });

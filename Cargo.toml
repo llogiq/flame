@@ -10,21 +10,21 @@ repository = "https://github.com/TyOverby/flame"
 documentation = "http://tyoverby.com/flame/flame/index.html"
 
 [features]
-default = []
-json = ["serde", "serde_macros", "serde_json"]
+default = ["json"]
+json = ["serde", "serde_derive", "serde_json"]
 
 [dependencies]
-lazy_static = "0.2.1"
-thread-id = "2.0.0"
+lazy_static = "0.2.*"
+thread-id = "3.*.*"
 
 [dependencies.serde]
-version = "0.8"
+version = "1.*.*"
 optional = true
 
-[dependencies.serde_macros]
-version = "0.8"
+[dependencies.serde_derive]
+version = "1.*.*"
 optional = true
 
 [dependencies.serde_json]
-version = "0.8"
+version = "1.*.*"
 optional = true
