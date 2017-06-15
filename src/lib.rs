@@ -261,15 +261,30 @@ impl Library {
 }
 
 fn commit_impl(library: &mut Library) {
+    use std::thread;
+    use std::sync::MutexGuard;
+    use std::mem;
+    
     let mut frame = PrivateFrame {
         all: vec![],
         id_stack: vec![],
         next_id: 0,
     };
-    ::std::mem::swap(&mut frame, &mut library.current);
 
-    let mut handle = ALL_THREADS.lock().unwrap();
-    let thread_name = ::std::thread::current().name().map(Into::into);
+    mem::swap(&mut frame, &mut library.current);
+
+    let mut handle = if let Ok(handle) = ALL_THREADS.lock() {
+        handle
+    } else {
+        return;
+    };
+
+    let thread_name = if thread::panicking() {
+        None
+    } else {
+        thread::current().name().map(Into::into)
+    };
+
     let thread_id = ::thread_id::get();
     handle.push((thread_id, thread_name, frame))
 }

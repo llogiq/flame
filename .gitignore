@@ -2,4 +2,4 @@ target
 Cargo.lock
 *.swp
 *.swo
-out.html
+*.html
