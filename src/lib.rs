@@ -66,6 +66,7 @@ thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
 #[derive(Debug)]
 struct Library {
+    name: Option<String>,
     current: PrivateFrame,
     epoch: Instant,
 }
@@ -251,6 +252,7 @@ impl Thread {
 impl Library {
     fn new() -> Library {
         Library {
+            name: ::std::thread::current().name().map(Into::into),
             current: PrivateFrame {
                 all: vec![],
                 id_stack: vec![],
@@ -280,11 +282,7 @@ fn commit_impl(library: &mut Library) {
         return;
     };
 
-    let thread_name = if thread::panicking() {
-        None
-    } else {
-        thread::current().name().map(Into::into)
-    };
+    let thread_name = library.name.clone();
 
     let thread_id = ::thread_id::get();
     handle.push((thread_id, thread_name, frame))
