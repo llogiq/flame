@@ -153,6 +153,7 @@ pub struct SpanGuard {
 
 impl Drop for SpanGuard {
     fn drop(&mut self) {
+        if ::std::thread::panicking() { return; }
         let name = self.name.take().unwrap();
         end_impl(name, self.collapse);
     }
@@ -295,6 +296,7 @@ pub fn commit_thread() {
 
 impl Drop for Library {
     fn drop(&mut self) {
+        if ::std::thread::panicking() { return; }
         commit_impl(self);
     }
 }
