@@ -349,20 +349,17 @@ pub fn start<S: Into<StrCow>>(name: S) {
 }
 
 fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
-    use std::thread;
-
     let name = name.into();
-    let delta = LIBRARY.with(|library| {
+    LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         let epoch = library.epoch;
         let collector = &mut library.current;
 
         let current_id = match collector.id_stack.pop() {
             Some(id) => id,
-            None if thread::panicking() => 0,
-            None => panic!("flame::end({:?}) called without a currently running span!", &name)
+            None => panic!("flame::end({:?}) called without a currently running span!",
+                          &name)
         };
-
         let event = &mut collector.all[current_id as usize];
 
         if event.name != name {
@@ -374,12 +371,7 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
         event.collapse = collapse;
         event.delta = Some(timestamp - event.start_ns);
         event.delta
-    });
-
-    match delta {
-        Some(d) => d,
-        None => 0, // panicking
-    }
+    }).unwrap()
 }
 
 /// Ends the current Span and returns the number
