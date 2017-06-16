@@ -66,6 +66,7 @@ thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
 #[derive(Debug)]
 struct Library {
+    name: Option<String>,
     current: PrivateFrame,
     epoch: Instant,
 }
@@ -153,6 +154,7 @@ pub struct SpanGuard {
 
 impl Drop for SpanGuard {
     fn drop(&mut self) {
+        if ::std::thread::panicking() { return; }
         let name = self.name.take().unwrap();
         end_impl(name, self.collapse);
     }
@@ -250,6 +252,7 @@ impl Thread {
 impl Library {
     fn new() -> Library {
         Library {
+            name: ::std::thread::current().name().map(Into::into),
             current: PrivateFrame {
                 all: vec![],
                 id_stack: vec![],
@@ -261,15 +264,26 @@ impl Library {
 }
 
 fn commit_impl(library: &mut Library) {
+    use std::thread;
+    use std::sync::MutexGuard;
+    use std::mem;
+    
     let mut frame = PrivateFrame {
         all: vec![],
         id_stack: vec![],
         next_id: 0,
     };
-    ::std::mem::swap(&mut frame, &mut library.current);
 
-    let mut handle = ALL_THREADS.lock().unwrap();
-    let thread_name = ::std::thread::current().name().map(Into::into);
+    mem::swap(&mut frame, &mut library.current);
+
+    let mut handle = if let Ok(handle) = ALL_THREADS.lock() {
+        handle
+    } else {
+        return;
+    };
+
+    let thread_name = library.name.clone();
+
     let thread_id = ::thread_id::get();
     handle.push((thread_id, thread_name, frame))
 }
@@ -280,6 +294,7 @@ pub fn commit_thread() {
 
 impl Drop for Library {
     fn drop(&mut self) {
+        if ::std::thread::panicking() { return; }
         commit_impl(self);
     }
 }
@@ -334,17 +349,20 @@ pub fn start<S: Into<StrCow>>(name: S) {
 }
 
 fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
+    use std::thread;
+
     let name = name.into();
-    LIBRARY.with(|library| {
+    let delta = LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         let epoch = library.epoch;
         let collector = &mut library.current;
 
         let current_id = match collector.id_stack.pop() {
             Some(id) => id,
-            None => panic!("flame::end({:?}) called without a currently running span!",
-                          &name)
+            None if thread::panicking() => 0,
+            None => panic!("flame::end({:?}) called without a currently running span!", &name)
         };
+
         let event = &mut collector.all[current_id as usize];
 
         if event.name != name {
@@ -356,7 +374,12 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
         event.collapse = collapse;
         event.delta = Some(timestamp - event.start_ns);
         event.delta
-    }).unwrap()
+    });
+
+    match delta {
+        Some(d) => d,
+        None => 0, // panicking
+    }
 }
 
 /// Ends the current Span and returns the number
