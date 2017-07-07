@@ -14,17 +14,17 @@ default = ["json"]
 json = ["serde", "serde_derive", "serde_json"]
 
 [dependencies]
-lazy_static = "0.2.*"
-thread-id = "3.*.*"
+lazy_static = "0.2"
+thread-id = "3"
 
 [dependencies.serde]
-version = "1.*.*"
+version = "1"
 optional = true
 
 [dependencies.serde_derive]
-version = "1.*.*"
+version = "1"
 optional = true
 
 [dependencies.serde_json]
-version = "1.*.*"
+version = "1"
 optional = true
