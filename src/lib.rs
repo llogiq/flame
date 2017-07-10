@@ -58,6 +58,7 @@ use std::iter::Peekable;
 use std::borrow::Cow;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
+use std::io::{Write, Error as IoError};
 
 pub type StrCow = Cow<'static, str>;
 
@@ -499,8 +500,8 @@ pub fn debug() {
     });
 }
 
-pub fn dump_stdout() {
-    fn print_span(span: &Span) -> f32 {
+pub fn dump_text_to_writer<W: Write>(mut out: W) -> Result<(), IoError>  {
+    fn print_span<W: Write>(span: &Span, out: &mut W) -> Result<f32, IoError> {
         let mut buf = String::new();
         for _ in 0 .. span.depth {
             buf.push_str("  ");
@@ -508,10 +509,10 @@ pub fn dump_stdout() {
         buf.push_str("| ");
         let ms = span.delta as f32 / 1000000.0;
         buf.push_str(&format!("{}: {}ms", span.name, ms));
-        println!("{}", buf);
+        writeln!(out, "{}", buf)?;
         let mut missing = ms;
         for child in &span.children {
-            missing -= print_span(child);
+            missing -= print_span(child, out)?;
         }
 
         if !span.children.is_empty() {
@@ -521,19 +522,26 @@ pub fn dump_stdout() {
             }
             buf.push_str("+ ");
             buf.push_str(&format!("{}ms", missing));
-            println!("{}", buf);
+            writeln!(out, "{}", buf)?;
         }
 
-        ms
+        Ok(ms)
     }
 
     for thread in threads() {
-        println!("THREAD: {}", thread.id);
+        writeln!(out, "THREAD: {}", thread.id)?;
         for span in thread.spans {
-            print_span(&span);
+            print_span(&span, &mut out)?;
         }
-        println!("");
+        writeln!(out, "")?;
     }
+    Ok(())
+}
+
+pub fn dump_stdout() {
+    let stdout = ::std::io::stdout();
+    let stdout = stdout.lock();
+    dump_text_to_writer(stdout);
 }
 
 #[cfg(feature="json")]
