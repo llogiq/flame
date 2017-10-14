@@ -44,6 +44,8 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate thread_id;
+
+#[cfg(feature = "json")]
 #[macro_use]
 extern crate serde_derive;
 #[cfg(feature = "json")]
