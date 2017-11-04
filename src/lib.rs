@@ -551,4 +551,4 @@ pub fn dump_json<W: std::io::Write>(out: &mut W) -> std::io::Result<()> {
     out.write_all(serde_json::to_string_pretty(&threads()).unwrap().as_bytes())
 }
 
-pub use html::dump_html;
+pub use html::{dump_html, dump_html_custom};
