@@ -278,17 +278,15 @@ fn commit_impl(library: &mut Library) {
     };
 
     mem::swap(&mut frame, &mut library.current);
-
-    let mut handle = if let Ok(handle) = ALL_THREADS.lock() {
-        handle
-    } else {
+    if frame.all.is_empty() {
         return;
-    };
+    }
 
-    let thread_name = library.name.clone();
-
-    let thread_id = ::thread_id::get();
-    handle.push((thread_id, thread_name, frame))
+    if let Ok(mut handle) = ALL_THREADS.lock() {
+        let thread_name = library.name.clone();
+        let thread_id = ::thread_id::get();
+        handle.push((thread_id, thread_name, frame))
+    }
 }
 
 pub fn commit_thread() {
@@ -447,6 +445,7 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
 /// Clears all of the recorded info that Flame has
 /// tracked.
 pub fn clear() {
+    if ::std::thread::panicking() { return; }
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         library.current = PrivateFrame {
@@ -463,6 +462,7 @@ pub fn clear() {
 
 /// Returns a list of spans from the current thread
 pub fn spans() -> Vec<Span> {
+    if ::std::thread::panicking() { return vec![]; }
     LIBRARY.with(|library| {
         let library = library.borrow();
         let cur = &library.current;
@@ -471,7 +471,7 @@ pub fn spans() -> Vec<Span> {
 }
 
 pub fn threads() -> Vec<Thread> {
-    let mut handle = ALL_THREADS.lock().unwrap();
+    if ::std::thread::panicking() { return vec![]; }
 
     let my_thread_name = ::std::thread::current().name().map(Into::into);
     let my_thread_id = ::thread_id::get();
@@ -483,13 +483,15 @@ pub fn threads() -> Vec<Thread> {
         _priv: (),
     }];
 
-    for &(id, ref name, ref frm) in &*handle {
-        out.push(Thread {
-            id: id,
-            name: name.clone(),
-            spans: convert_events_to_span(frm.all.iter()),
-            _priv: (),
-        });
+    if let Ok(mut handle) = ALL_THREADS.lock() {
+        for &(id, ref name, ref frm) in &*handle {
+            out.push(Thread {
+                id: id,
+                name: name.clone(),
+                spans: convert_events_to_span(frm.all.iter()),
+                _priv: (),
+            });
+        }
     }
 
     out
@@ -497,6 +499,7 @@ pub fn threads() -> Vec<Thread> {
 
 /// Prints all of the frames to stdout.
 pub fn debug() {
+    if ::std::thread::panicking() { return; }
     LIBRARY.with(|library| {
         println!("{:?}", library);
     });

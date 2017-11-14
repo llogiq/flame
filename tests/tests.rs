@@ -93,6 +93,7 @@ fn threads() {
                 let s = format!("thread {}", i);
                 flame::start(s.clone());
                 flame::end(s);
+                flame::commit_thread();
             }
         }));
     }
@@ -103,12 +104,8 @@ fn threads() {
 
     flame::end("main thread");
 
-    let threads = flame::threads().into_iter().filter(|&flame::Thread { ref spans, .. }| {
-        spans.len() == 1 && (spans[0].name.starts_with("thread ") ||
-                             spans[0].name.starts_with("main thread"))
-    });
-
-    assert_eq!(threads.count(), 6);
+    let threads = flame::threads();
+    assert_eq!(threads.len(), 6);
 }
 
 #[test]
