@@ -7,7 +7,7 @@ exclude = ["resources/*.png"]
 
 description = "a profiling / flamegraph library"
 repository = "https://github.com/TyOverby/flame"
-documentation = "http://tyoverby.com/flame/flame/index.html"
+documentation = "https://docs.rs/flame"
 
 [features]
 default = ["json"]
