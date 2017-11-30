@@ -14,7 +14,7 @@ default = ["json"]
 json = ["serde", "serde_derive", "serde_json"]
 
 [dependencies]
-lazy_static = "0.2.*"
+lazy_static = "1.*.*"
 thread-id = "3.*.*"
 
 [dependencies.serde]
