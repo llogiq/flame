@@ -213,3 +213,5 @@ pub fn dump_json<W: std::io::Write>(_out: &mut W) -> std::io::Result<()> {
 }
 
 pub use html::{dump_html, dump_html_custom};
+
+pub fn commit_thread() {}
