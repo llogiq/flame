@@ -12,6 +12,7 @@ documentation = "https://docs.rs/flame"
 [features]
 default = ["json"]
 json = ["serde", "serde_derive", "serde_json"]
+off = []
 
 [dependencies]
 lazy_static = "1.*.*"
