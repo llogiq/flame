@@ -172,7 +172,7 @@ impl SpanGuard {
 
 fn ns_since_epoch(epoch: Instant) -> u64 {
     let elapsed = epoch.elapsed();
-    elapsed.as_secs() * 1000_000_000 + elapsed.subsec_nanos() as u64
+    elapsed.as_secs() * 1000_000_000 + u64::from(elapsed.subsec_nanos())
 }
 
 fn convert_events_to_span<'a, I>(events: I) -> Vec<Span>
@@ -194,7 +194,7 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
             start_ns: event.start_ns,
             end_ns: event.end_ns.unwrap(),
             delta: event.delta.unwrap(),
-            depth: depth,
+            depth,
             children: vec![],
             notes: event.notes.clone(),
             collapsable: event.collapse,
@@ -214,7 +214,7 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
             let child = event_to_span(next, events, depth + 1);
             if let Some(child) = child {
                 // Try to collapse with the previous span
-                if span.children.len() != 0 && child.collapsable && child.children.len() == 0 {
+                if !span.children.is_empty() && child.collapsable && child.children.is_empty() {
                     let last = span.children.last_mut().unwrap();
                     if last.name == child.name && last.depth == child.depth {
                         last.end_ns = child.end_ns;
@@ -247,7 +247,7 @@ impl Thread {
     }
 
     #[cfg(feature = "json")]
-    pub fn into_json_list(threads: &Vec<Thread>) -> String {
+    pub fn into_json_list(threads: &[Thread]) -> String {
         ::serde_json::to_string_pretty(threads).unwrap()
     }
 }
@@ -334,7 +334,7 @@ pub fn start<S: Into<StrCow>>(name: S) {
         collector.next_id += 1;
 
         let this = Event {
-            id: id,
+            id,
             parent: collector.id_stack.last().cloned(),
             name: name.into(),
             collapse: false,
@@ -434,8 +434,8 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
 
         let event = &mut collector.all[current_id as usize];
         event.notes.push(Note {
-            name: name,
-            description: description,
+            name,
+            description,
             instant: ns_since_epoch(epoch),
             _priv: ()
         });
@@ -486,7 +486,7 @@ pub fn threads() -> Vec<Thread> {
     if let Ok(mut handle) = ALL_THREADS.lock() {
         for &(id, ref name, ref frm) in &*handle {
             out.push(Thread {
-                id: id,
+                id,
                 name: name.clone(),
                 spans: convert_events_to_span(frm.all.iter()),
                 _priv: (),
@@ -522,7 +522,7 @@ pub fn dump_text_to_writer<W: Write>(mut out: W) -> Result<(), IoError>  {
 
         if !span.children.is_empty() {
             let mut buf = String::new();
-            for _ in 0 .. (span.depth + 1) {
+            for _ in 0 ..= span.depth {
                 buf.push_str("  ");
             }
             buf.push_str("+ ");
@@ -538,7 +538,7 @@ pub fn dump_text_to_writer<W: Write>(mut out: W) -> Result<(), IoError>  {
         for span in thread.spans {
             print_span(&span, &mut out)?;
         }
-        writeln!(out, "")?;
+        writeln!(out)?;
     }
     Ok(())
 }
