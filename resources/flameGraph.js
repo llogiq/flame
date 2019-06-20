@@ -1,4 +1,4 @@
-(function(){'use strict';function flameGraph(){var w=960,h=540,c=18,selection=null,tooltip=true,title="",transitionDuration=750,transitionEase="cubic-in-out",sort=true,reversed=false,clickHandler=null;var tip=d3.tip().direction("s").offset([8,0]).attr('class','d3-flame-graph-tip').html(function(d){return label(d);});var labelFormat=function(d){return d.name+" ("+d3.round(100*d.dx,3)+"%, "+d.value+" samples)";};function setDetails(t){var details=document.getElementById("details");if(details)
+(function(){'use strict';function flameGraph(){var w=960,h=540,c=18,selection=null,tooltip=true,title="",transitionDuration=750,transitionEase="cubic-in-out",sort=true,reversed=false,clickHandler=null;var tip=d3.tip().direction("s").offset([8,0]).attr('class','d3-flame-graph-tip').html(function(d){return label(d);});var labelFormat=function(d){console.log(d); return d.name+" ("+d3.round(100*d.dx,3)+"%, "+d.value/1000000+"ms)";};function setDetails(t){var details=document.getElementById("details");if(details)
 details.innerHTML=t;}
 function label(d){if(!d.dummy){return labelFormat(d);}else{return"";}}
 function name(d){return d.name;}
