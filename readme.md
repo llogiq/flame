@@ -7,7 +7,7 @@ program spends in critical sections of your code giving you some
 much-needed insight into where optimizations may be needed.
 
 Unlike tools like `perf` which have the OS interrupt your running
-program repeatadly and reports on every function in your callstack,
+program repeatedly and reports on every function in your callstack,
 FLAME lets you choose what you want to see in the graph by adding
 performance instrumentation to your own code.
 
