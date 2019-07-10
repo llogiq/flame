@@ -5,7 +5,7 @@ use super::{Span};
 pub fn dump_html_custom<W: Write>(mut out: W, spans: &[Span]) -> IoResult<()> {
     fn dump_spans<W: Write>(out: &mut W, span: &Span) -> IoResult<()> {
         try!(writeln!(out, "{{"));
-        try!(writeln!(out, r#"name: "{}","#, span.name));
+        try!(writeln!(out, r#"name: {:?},"#, span.name));
         try!(writeln!(out, "value: {},", span.delta));
         try!(writeln!(out, "start: {},", span.start_ns));
         try!(writeln!(out, "end: {},", span.end_ns));
