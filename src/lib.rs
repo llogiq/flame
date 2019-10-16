@@ -150,6 +150,8 @@ pub struct Thread {
     _priv: (),
 }
 
+#[must_use = "The guard is immediately dropped after instantiation. This is probably not
+what you want! Consider using a `let` binding to increase its lifetime."]
 pub struct SpanGuard {
     name: Option<StrCow>,
     collapse: bool,
