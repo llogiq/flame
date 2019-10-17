@@ -66,6 +66,3 @@ fn this_function_is_profiled() {
     ...
 }
 ```
-
-So if you are using a nightly version of rust, check it out; flamer is probably the easiest way
-to use FLAME!
