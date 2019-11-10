@@ -4,22 +4,22 @@ use super::{Span};
 
 pub fn dump_html_custom<W: Write>(mut out: W, spans: &[Span]) -> IoResult<()> {
     fn dump_spans<W: Write>(out: &mut W, span: &Span) -> IoResult<()> {
-        try!(writeln!(out, "{{"));
-        try!(writeln!(out, r#"name: {:?},"#, span.name));
-        try!(writeln!(out, "value: {},", span.delta));
-        try!(writeln!(out, "start: {},", span.start_ns));
-        try!(writeln!(out, "end: {},", span.end_ns));
-        try!(writeln!(out, "children: ["));
+        writeln!(out, "{{")?;
+        writeln!(out, r#"name: {:?},"#, span.name)?;
+        writeln!(out, "value: {},", span.delta)?;
+        writeln!(out, "start: {},", span.start_ns)?;
+        writeln!(out, "end: {},", span.end_ns)?;
+        writeln!(out, "children: [")?;
         for child in &span.children {
-            try!(dump_spans(out, child));
-            try!(writeln!(out, ","));
+            dump_spans(out, child)?;
+            writeln!(out, ",")?;
         }
-        try!(writeln!(out, "],"));
-        try!(writeln!(out, "}}"));
+        writeln!(out, "],")?;
+        writeln!(out, "}}")?;
         Ok(())
     }
 
-    try!(write!(out, r#"
+    write!(out, r#"
 <!doctype html>
 <html>
     <head>
@@ -57,17 +57,17 @@ pub fn dump_html_custom<W: Write>(mut out: W, spans: &[Span]) -> IoResult<()> {
                     }}
                   }});
             d3.select("body").datum({{ children: [
-"#, include_str!("../resources/flameGraph.css"), include_str!("../resources/d3.js"), include_str!("../resources/d3-tip.js"), include_str!("../resources/flameGraph.js")));
+"#, include_str!("../resources/flameGraph.css"), include_str!("../resources/d3.js"), include_str!("../resources/d3-tip.js"), include_str!("../resources/flameGraph.js"))?;
 
     for span in spans {
-        try!(dump_spans(&mut out, &span));
-        try!(writeln!(out, ","));
+        dump_spans(&mut out, &span)?;
+        writeln!(out, ",")?;
     }
 
-    try!(write!(out, r#"]}}).call(flamegraph);
+    write!(out, r#"]}}).call(flamegraph);
          </script>
     </body>
-</html>"#));
+</html>"#)?;
 
     Ok(())
 }
