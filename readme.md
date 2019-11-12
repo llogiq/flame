@@ -63,9 +63,10 @@ use std::fs::File;
 use flame;
 
 fn make_vec(size: usize) -> Vec<u32> {
-    let fg = ::flame::start_guard("make_vec");
+    // start_guard needs to drop to calculate duration.
+    let _fg = ::flame::start_guard("make_vec");
 
-let mut res = flame::span_of("vec init", || vec![0_u32; size]);
+    let mut res = flame::span_of("vec init", || vec![0_u32; size]);
     for x in 0..size {
         res[x] = ((x + 10)/3) as u32;
     }
