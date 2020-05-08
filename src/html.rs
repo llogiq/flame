@@ -23,6 +23,7 @@ pub fn dump_html_custom<W: Write>(mut out: W, spans: &[Span]) -> IoResult<()> {
 <!doctype html>
 <html>
     <head>
+        <meta charset="utf-8">
         <style>
             html, body {{
                 width: 100%;
