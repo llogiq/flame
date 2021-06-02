@@ -414,7 +414,7 @@ pub fn end_with<S: Into<StrCow>, R>(name: S, result: R) -> R {
 /// This means that it is possible for end_ns - start_n
 /// to not be equal to delta.
 pub fn end_collapse<S: Into<StrCow>>(name: S) -> u64 {
-    end_impl(name, false)
+    end_impl(name, true)
 }
 
 /// Records a note on the current Span.
