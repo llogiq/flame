@@ -28,6 +28,7 @@ pub fn main() {
     flame::end("render");
 
     flame::dump_html(&mut File::create("out.html").unwrap()).unwrap();
+    #[cfg(feature = "json")]
     flame::dump_json(&mut File::create("out.json").unwrap()).unwrap();
     flame::dump_stdout();
 }
